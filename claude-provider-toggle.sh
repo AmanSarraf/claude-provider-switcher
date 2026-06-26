@@ -8,6 +8,7 @@
 #   claude-switch <name>       # switch to a specific profile
 #   claude-status              # show active profile and available profiles
 #   claude-profiles            # list profiles + instructions for adding new ones
+#   claude-run <profile> [cmd] # run a command under a profile without switching globally
 #
 # Profiles live in ~/.claude-providers/<name>.env
 # State file holds the active profile name
@@ -93,6 +94,40 @@ claude-profiles() {
   echo "To add a new profile:"
   echo "  1. Create ~/.claude-providers/<name>.env with your export/unset lines"
   echo "  2. Run: claude-switch <name>"
+}
+
+# Run a command under a specific provider profile without changing the global active profile.
+# The profile is sourced inside a subshell, so the parent shell environment is never modified.
+#
+# Usage: claude-run <profile> <command> [args...]
+# Example: claude-run foundry claude --version
+# Example: claude-run bedrock env | grep AWS
+claude-run() {
+  local profile="$1"
+  if [ -z "$profile" ]; then
+    echo "Usage: claude-run <profile> <command> [args...]"
+    echo "       claude-run <profile>          # open a subshell under that profile"
+    return 1
+  fi
+  local profile_file="$HOME/.claude-providers/${profile}.env"
+  if [ ! -f "$profile_file" ]; then
+    echo "Unknown profile: $profile"
+    echo "Available profiles:"
+    ls "$HOME/.claude-providers/"*.env 2>/dev/null \
+      | while IFS= read -r f; do echo "  $(basename "$f" .env)"; done \
+      | sort
+    return 1
+  fi
+  shift
+  if [ "$#" -eq 0 ]; then
+    # No command given — open an interactive subshell with the profile loaded
+    echo "[claude-toggle] Entering subshell with profile: $profile"
+    echo "[claude-toggle] Type 'exit' to return to your original environment."
+    (. "$profile_file"; exec "${SHELL:-sh}")
+  else
+    # Run the given command in a subshell — exec replaces the subshell process
+    (. "$profile_file"; exec "$@")
+  fi
 }
 
 _load_claude_provider

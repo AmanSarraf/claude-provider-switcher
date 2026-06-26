@@ -1,0 +1,4 @@
+# Never commit real profile files — only commit .example templates
+~/.claude-providers/
+*.env
+!*.env.example

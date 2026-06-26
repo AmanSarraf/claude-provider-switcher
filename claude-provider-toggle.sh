@@ -10,6 +10,7 @@
 #   claude-status --json       # machine-readable JSON output
 #   claude-profiles            # list profiles + instructions for adding new ones
 #   claude-run <profile> [cmd] # run a command under a profile without switching globally
+#   claude-pick                # interactive numbered menu to choose a profile
 #
 # Profiles live in ~/.claude-providers/<name>.env
 # State file holds the active profile name
@@ -145,6 +146,43 @@ claude-run() {
     # Run the given command in a subshell — exec replaces the subshell process
     (. "$profile_file"; exec "$@")
   fi
+}
+
+# Interactive numbered menu to pick a provider profile.
+# Uses the shell built-in 'select' — no external dependencies required.
+# Press Ctrl-C or enter blank to cancel without switching.
+claude-pick() {
+  local current
+  current=$(cat "$CLAUDE_PROVIDER_STATE" 2>/dev/null || echo "anthropic")
+  current="${current%$'\n'}"
+
+  # Collect profiles into a positional array (bash and zsh compatible)
+  local -a options
+  while IFS= read -r p; do
+    options+=("$p")
+  done < <(ls "$HOME/.claude-providers/"*.env 2>/dev/null \
+    | while IFS= read -r f; do basename "$f" .env; done \
+    | sort)
+
+  if [ "${#options[@]}" -eq 0 ]; then
+    echo "No profiles found in ~/.claude-providers/"
+    return 1
+  fi
+
+  echo "Current provider: $current"
+  echo "Select a provider (Ctrl-C to cancel):"
+
+  # 'select' is a built-in available in both bash and zsh
+  PS3="> "
+  select choice in "${options[@]}"; do
+    if [ -n "$choice" ]; then
+      claude-switch "$choice"
+      break
+    else
+      echo "Cancelled."
+      break
+    fi
+  done
 }
 
 _load_claude_provider

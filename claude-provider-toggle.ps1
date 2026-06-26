@@ -9,6 +9,7 @@
 #   claude-status -Json        # machine-readable JSON output
 #   claude-profiles            # list profiles + instructions for adding new ones
 #   claude-run <profile> [cmd] # run a command under a profile without switching globally
+#   claude-pick                # interactive numbered menu to choose a profile
 #
 # Profiles live in $HOME\.claude-providers\<name>.ps1
 # State file holds the active profile name
@@ -153,6 +154,44 @@ function global:claude-run {
             }
         }
     }
+}
+
+# Interactive numbered menu to pick a provider profile.
+# No external dependencies — uses Read-Host for input.
+# Press Enter with no input or an invalid number to cancel.
+function global:claude-pick {
+    $current = (Get-Content $ClaudeProviderState -ErrorAction SilentlyContinue) -replace '\s', ''
+    if (-not $current) { $current = "anthropic" }
+
+    $profiles = Get-ChildItem "$ClaudeProviderDir\*.ps1" -ErrorAction SilentlyContinue `
+                | Sort-Object BaseName `
+                | Select-Object -ExpandProperty BaseName
+
+    if (-not $profiles) {
+        Write-Host "No profiles found in $ClaudeProviderDir"
+        return
+    }
+
+    Write-Host "Current provider: $current"
+    Write-Host "Select a provider (Enter to cancel):"
+    for ($i = 0; $i -lt $profiles.Count; $i++) {
+        $marker = if ($profiles[$i] -eq $current) { " *" } else { "  " }
+        Write-Host "$marker$($i + 1)) $($profiles[$i])"
+    }
+
+    $input = Read-Host "> "
+    if (-not $input) {
+        Write-Host "Cancelled."
+        return
+    }
+
+    $idx = [int]$input - 1
+    if ($idx -lt 0 -or $idx -ge $profiles.Count) {
+        Write-Host "Invalid selection. Cancelled."
+        return
+    }
+
+    claude-switch $profiles[$idx]
 }
 
 _Load-ClaudeProvider

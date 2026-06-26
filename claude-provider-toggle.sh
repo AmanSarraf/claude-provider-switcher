@@ -7,6 +7,7 @@
 #   claude-switch              # cycle to next profile (alphabetical)
 #   claude-switch <name>       # switch to a specific profile
 #   claude-status              # show active profile and available profiles
+#   claude-status --json       # machine-readable JSON output
 #   claude-profiles            # list profiles + instructions for adding new ones
 #   claude-run <profile> [cmd] # run a command under a profile without switching globally
 #
@@ -76,13 +77,29 @@ claude-status() {
   local provider
   provider=$(cat "$CLAUDE_PROVIDER_STATE" 2>/dev/null || echo "anthropic")
   provider="${provider%$'\n'}"
+
+  # Collect available profiles into a variable
+  local profiles_list
+  profiles_list=$(ls "$HOME/.claude-providers/"*.env 2>/dev/null \
+    | while IFS= read -r f; do basename "$f" .env; done \
+    | sort)
+
+  if [ "$1" = "--json" ]; then
+    # Emit machine-readable JSON — no jq dependency needed
+    local profiles_json=""
+    while IFS= read -r p; do
+      [ -n "$profiles_json" ] && profiles_json="${profiles_json},"
+      profiles_json="${profiles_json}\"${p}\""
+    done <<< "$profiles_list"
+    printf '{"active":"%s","profiles":[%s]}\n' "$provider" "$profiles_json"
+    return
+  fi
+
   echo "--- Claude Provider Status ---"
   echo "Active  : $provider"
   echo "Profile : $HOME/.claude-providers/${provider}.env"
   echo "Available profiles:"
-  ls "$HOME/.claude-providers/"*.env 2>/dev/null \
-    | while IFS= read -r f; do echo "  $(basename "$f" .env)"; done \
-    | sort
+  echo "$profiles_list" | while IFS= read -r p; do echo "  $p"; done
 }
 
 claude-profiles() {

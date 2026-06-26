@@ -6,6 +6,7 @@
 #   claude-switch              # cycle to next profile (alphabetical)
 #   claude-switch <name>       # switch to a specific profile
 #   claude-status              # show active profile and available profiles
+#   claude-status -Json        # machine-readable JSON output
 #   claude-profiles            # list profiles + instructions for adding new ones
 #   claude-run <profile> [cmd] # run a command under a profile without switching globally
 #
@@ -62,15 +63,29 @@ function global:claude-switch {
 }
 
 function global:claude-status {
+    param([switch]$Json)
+
     $provider = (Get-Content $ClaudeProviderState -ErrorAction SilentlyContinue) -replace '\s', ''
     if (-not $provider) { $provider = "anthropic" }
+
+    $profiles = Get-ChildItem "$ClaudeProviderDir\*.ps1" -ErrorAction SilentlyContinue `
+                | Sort-Object BaseName `
+                | Select-Object -ExpandProperty BaseName
+
+    if ($Json) {
+        # Emit machine-readable JSON using PowerShell's built-in serializer
+        [PSCustomObject]@{
+            active   = $provider
+            profiles = @($profiles)
+        } | ConvertTo-Json -Compress
+        return
+    }
+
     Write-Host "--- Claude Provider Status ---"
     Write-Host "Active  : $provider"
     Write-Host "Profile : $(Join-Path $ClaudeProviderDir "$provider.ps1")"
     Write-Host "Available profiles:"
-    Get-ChildItem "$ClaudeProviderDir\*.ps1" -ErrorAction SilentlyContinue `
-      | Sort-Object BaseName `
-      | ForEach-Object { Write-Host "  $($_.BaseName)" }
+    $profiles | ForEach-Object { Write-Host "  $_" }
 }
 
 function global:claude-profiles {

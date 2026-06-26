@@ -1,50 +1,70 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 # claude-provider-toggle.sh
 # Drop-in shell snippet for switching Claude Code between multiple API providers.
-# Source this file from your ~/.zshrc or ~/.bashrc.
+# Works with bash and zsh. Source this file from your ~/.zshrc or ~/.bashrc.
 #
 # Usage:
 #   claude-switch              # cycle to next profile (alphabetical)
 #   claude-switch <name>       # switch to a specific profile
 #   claude-status              # show active profile and available profiles
 #   claude-profiles            # list profiles + instructions for adding new ones
-
+#
 # Profiles live in ~/.claude-providers/<name>.env
 # State file holds the active profile name
+
 CLAUDE_PROVIDER_STATE="$HOME/.claude-provider-state"
 [ ! -f "$CLAUDE_PROVIDER_STATE" ] && echo "anthropic" > "$CLAUDE_PROVIDER_STATE"
 
 _load_claude_provider() {
   local provider profile_file
   provider=$(cat "$CLAUDE_PROVIDER_STATE" 2>/dev/null || echo "anthropic")
+  provider="${provider%$'\n'}"  # strip trailing newline (portable)
   profile_file="$HOME/.claude-providers/${provider}.env"
   if [ -f "$profile_file" ]; then
-    source "$profile_file"
+    # shellcheck source=/dev/null
+    . "$profile_file"
   else
     echo "[claude-toggle] Warning: profile file not found: $profile_file"
   fi
 }
 
+# Returns the profile that comes after $1 alphabetically, wrapping around.
+_next_claude_profile() {
+  local current="$1" first="" found=0 next=""
+  while IFS= read -r profile; do
+    profile="${profile%$'\n'}"
+    [ -z "$first" ] && first="$profile"
+    if [ "$found" -eq 1 ]; then
+      next="$profile"
+      found=0
+      break
+    fi
+    [ "$profile" = "$current" ] && found=1
+  done < <(ls "$HOME/.claude-providers/"*.env 2>/dev/null \
+           | while IFS= read -r f; do basename "$f" .env; done \
+           | sort)
+  echo "${next:-$first}"
+}
+
 claude-switch() {
-  local target available
+  local target
   if [ -n "$1" ]; then
-    # Switch to named profile
     target="$1"
     if [ ! -f "$HOME/.claude-providers/${target}.env" ]; then
       echo "Unknown profile: $target"
       echo "Available profiles:"
-      ls "$HOME/.claude-providers/"/*.env 2>/dev/null | xargs -I{} basename {} .env | sed 's/^/  /'
+      ls "$HOME/.claude-providers/"*.env 2>/dev/null \
+        | while IFS= read -r f; do echo "  $(basename "$f" .env)"; done \
+        | sort
       return 1
     fi
     echo "$target" > "$CLAUDE_PROVIDER_STATE"
   else
-    # No arg: cycle to next profile alphabetically
-    local -a available
-    available=($(ls "$HOME/.claude-providers/"/*.env 2>/dev/null | xargs -I{} basename {} .env | sort))
-    local current idx next
-    current=$(cat "$CLAUDE_PROVIDER_STATE" 2>/dev/null || echo "${available[1]}")
-    idx=${available[(i)$current]}
-    next="${available[$(( idx % ${#available[@]} + 1 ))]}"
+    local current
+    current=$(cat "$CLAUDE_PROVIDER_STATE" 2>/dev/null || echo "anthropic")
+    current="${current%$'\n'}"
+    local next
+    next=$(_next_claude_profile "$current")
     echo "$next" > "$CLAUDE_PROVIDER_STATE"
   fi
   _load_claude_provider
@@ -52,19 +72,23 @@ claude-switch() {
 }
 
 claude-status() {
-  local provider profile_file
+  local provider
   provider=$(cat "$CLAUDE_PROVIDER_STATE" 2>/dev/null || echo "anthropic")
-  profile_file="$HOME/.claude-providers/${provider}.env"
+  provider="${provider%$'\n'}"
   echo "--- Claude Provider Status ---"
   echo "Active  : $provider"
-  echo "Profile : $profile_file"
+  echo "Profile : $HOME/.claude-providers/${provider}.env"
   echo "Available profiles:"
-  ls "$HOME/.claude-providers/"/*.env 2>/dev/null | xargs -I{} basename {} .env | sed 's/^/  /'
+  ls "$HOME/.claude-providers/"*.env 2>/dev/null \
+    | while IFS= read -r f; do echo "  $(basename "$f" .env)"; done \
+    | sort
 }
 
 claude-profiles() {
   echo "Profiles in ~/.claude-providers/:"
-  ls "$HOME/.claude-providers/"/*.env 2>/dev/null | xargs -I{} basename {} .env | sed 's/^/  /'
+  ls "$HOME/.claude-providers/"*.env 2>/dev/null \
+    | while IFS= read -r f; do echo "  $(basename "$f" .env)"; done \
+    | sort
   echo ""
   echo "To add a new profile:"
   echo "  1. Create ~/.claude-providers/<name>.env with your export/unset lines"

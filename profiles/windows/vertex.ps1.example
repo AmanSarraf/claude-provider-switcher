@@ -1,0 +1,19 @@
+# profiles/windows/vertex.ps1.example
+# Google Cloud Vertex AI for Windows (PowerShell)
+# Copy to $HOME\.claude-providers\vertex.ps1 and fill in your values.
+#
+# Requires a GCP project with Vertex AI API enabled and Claude models activated.
+# Docs: https://docs.anthropic.com/en/api/claude-on-vertex-ai
+
+$env:CLAUDE_CODE_USE_VERTEX          = "1"
+$env:ANTHROPIC_VERTEX_PROJECT_ID     = "your-gcp-project-id"
+$env:CLOUD_ML_REGION                 = "us-east5"
+
+# Clear other provider vars to avoid conflicts
+Remove-Item Env:CLAUDE_CODE_USE_FOUNDRY    -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_FOUNDRY_RESOURCE -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_FOUNDRY_API_KEY  -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_API_KEY          -ErrorAction SilentlyContinue
+Remove-Item Env:CLAUDE_CODE_USE_BEDROCK    -ErrorAction SilentlyContinue
+Remove-Item Env:AWS_ACCESS_KEY_ID          -ErrorAction SilentlyContinue
+Remove-Item Env:AWS_SECRET_ACCESS_KEY      -ErrorAction SilentlyContinue

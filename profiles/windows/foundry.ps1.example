@@ -1,0 +1,18 @@
+# profiles/windows/foundry.ps1.example
+# Microsoft Azure AI Foundry for Windows (PowerShell)
+# Copy to $HOME\.claude-providers\foundry.ps1 and fill in your values.
+#
+# Get these values from your Azure AI Foundry project:
+#   https://ai.azure.com → your project → Settings → Keys and Endpoints
+
+$env:CLAUDE_CODE_USE_FOUNDRY          = "1"
+$env:ANTHROPIC_FOUNDRY_RESOURCE       = "YOUR_AZURE_RESOURCE_NAME"
+$env:ANTHROPIC_FOUNDRY_API_KEY        = "YOUR_AZURE_API_KEY"
+$env:ANTHROPIC_DEFAULT_SONNET_MODEL   = "claude-sonnet-4-5"
+$env:ANTHROPIC_DEFAULT_OPUS_MODEL     = "claude-opus-4-5"
+$env:ANTHROPIC_DEFAULT_HAIKU_MODEL    = "claude-haiku-4-5"
+
+# Clear other provider vars to avoid conflicts
+Remove-Item Env:ANTHROPIC_API_KEY      -ErrorAction SilentlyContinue
+Remove-Item Env:CLAUDE_CODE_USE_BEDROCK -ErrorAction SilentlyContinue
+Remove-Item Env:CLAUDE_CODE_USE_VERTEX  -ErrorAction SilentlyContinue

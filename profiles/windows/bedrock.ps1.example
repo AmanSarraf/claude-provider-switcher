@@ -1,0 +1,18 @@
+# profiles/windows/bedrock.ps1.example
+# AWS Bedrock for Windows (PowerShell)
+# Copy to $HOME\.claude-providers\bedrock.ps1 and fill in your values.
+#
+# Requires AWS credentials with Bedrock access.
+# Docs: https://docs.anthropic.com/en/api/claude-on-amazon-bedrock
+
+$env:CLAUDE_CODE_USE_BEDROCK    = "1"
+$env:AWS_ACCESS_KEY_ID          = "YOUR_AWS_ACCESS_KEY_ID"
+$env:AWS_SECRET_ACCESS_KEY      = "YOUR_AWS_SECRET_ACCESS_KEY"
+$env:AWS_REGION                 = "us-east-1"
+
+# Clear other provider vars to avoid conflicts
+Remove-Item Env:CLAUDE_CODE_USE_FOUNDRY    -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_FOUNDRY_RESOURCE -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_FOUNDRY_API_KEY  -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_API_KEY          -ErrorAction SilentlyContinue
+Remove-Item Env:CLAUDE_CODE_USE_VERTEX     -ErrorAction SilentlyContinue

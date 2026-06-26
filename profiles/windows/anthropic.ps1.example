@@ -1,0 +1,20 @@
+# profiles/windows/anthropic.ps1.example
+# Anthropic direct API for Windows (PowerShell)
+# Copy to $HOME\.claude-providers\anthropic.ps1 and fill in your values.
+#
+# For API key auth, uncomment and set:
+#   $env:ANTHROPIC_API_KEY = "sk-ant-..."
+#
+# For OAuth subscription (no API key needed), just unset provider-specific vars:
+
+Remove-Item Env:CLAUDE_CODE_USE_FOUNDRY    -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_FOUNDRY_RESOURCE -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_FOUNDRY_API_KEY  -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_DEFAULT_SONNET_MODEL -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_DEFAULT_OPUS_MODEL   -ErrorAction SilentlyContinue
+Remove-Item Env:ANTHROPIC_DEFAULT_HAIKU_MODEL  -ErrorAction SilentlyContinue
+Remove-Item Env:CLAUDE_CODE_USE_BEDROCK    -ErrorAction SilentlyContinue
+Remove-Item Env:CLAUDE_CODE_USE_VERTEX     -ErrorAction SilentlyContinue
+
+# Optional: uncomment to set a specific API key
+# $env:ANTHROPIC_API_KEY = "sk-ant-YOUR_KEY_HERE"
